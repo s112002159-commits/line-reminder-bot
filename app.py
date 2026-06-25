@@ -446,7 +446,6 @@ def handle_message(event):
 
     text = event.message.text.strip()
 
-    # 自動記錄
     if event.source.type == "user":
 
         add_user(event.source.user_id)
@@ -456,31 +455,39 @@ def handle_message(event):
         add_group(event.source.group_id)
 
     data = load_data()
+
     # =====================
-# 測試預覽
-# =====================
-if text in ["#測試", "/測試"]:
+    # 測試預覽
+    # =====================
+    if text in ["#測試", "/測試"]:
 
-    clear_expired()
+        clear_expired()
 
-    preview = "明日是否在營及事故回報：\n"
+        preview = "明日是否在營及事故回報：\n"
 
-    for member_name, info in data["members"].items():
+        for member_name, info in data["members"].items():
 
-        show_text = ""
+            show_text = ""
 
-        if should_show(info):
+            if should_show(info):
 
-            show_text = info.get("text", "")
+                show_text = info.get(
+                    "text",
+                    ""
+                )
 
-        preview += f"\n{member_name}：{show_text}"
+            preview += (
+                f"\n{member_name}：{show_text}"
+            )
 
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=preview)
-    )
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=preview
+            )
+        )
 
-    return
+        return
 
     # =====================
     # 格式：
