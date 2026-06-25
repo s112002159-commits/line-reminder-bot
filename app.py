@@ -197,9 +197,8 @@ def should_show(info):
     # 5/31 回報明日才顯示
     # =====================
     if show_once:
-
-    return True
-
+        return True
+        
     # =====================
     # 多日事件
     # 範例：
@@ -363,20 +362,19 @@ def send_job():
     # =====================
 # 單日事件發送後清除
 # =====================
-for name, info in data["members"].items():
+    for name, info in data["members"].items():
 
-    if info.get("show_once", False):
+        if info.get("show_once", False):
 
-        data["members"][name] = {
-            "text": "",
-            "start": "",
-            "expire": "",
-            "show_once": False
-        }
+            data["members"][name] = {
+                "text": "",
+                "start": "",
+                "expire": "",
+                "show_once": False
+            }
+    save_data(data)
 
-save_data(data)
-
-print("✅ 發送完成")
+    print("✅ 發送完成")
 
 # =====================
 # 首頁
@@ -485,14 +483,11 @@ def handle_message(event):
         # 多日事件
         # =====================
         multi_match = re.search(
-            r"(\d{1,2})/(\d{1,2}).*至(\d{1,2})/(\d{1,2})",
+            r"(\d{1,2})/(\d{1,2}).*-(\d{1,2})/(\d{1,2})",
             content
         )
 
-        multi_match = re.search(
-    r"(\d{1,2})/(\d{1,2})-(\d{1,2})/(\d{1,2})",
-    content
-        )
+        
 
         if multi_match:
 
@@ -520,8 +515,7 @@ def handle_message(event):
             }
 
         else:
-
-    data["members"][name] = {
+            data["members"][name] = {
         "text": content,
         "start": taiwan_now().date().strftime("%Y/%m/%d"),
         "expire": "",
