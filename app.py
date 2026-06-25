@@ -360,7 +360,23 @@ def send_job():
 
             print("Group Error:", e)
 
-    print("✅ 發送完成")
+    # =====================
+# 單日事件發送後清除
+# =====================
+for name, info in data["members"].items():
+
+    if info.get("show_once", False):
+
+        data["members"][name] = {
+            "text": "",
+            "start": "",
+            "expire": "",
+            "show_once": False
+        }
+
+save_data(data)
+
+print("✅ 發送完成")
 
 # =====================
 # 首頁
