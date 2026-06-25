@@ -456,6 +456,31 @@ def handle_message(event):
         add_group(event.source.group_id)
 
     data = load_data()
+    # =====================
+# 測試預覽
+# =====================
+if text in ["#測試", "/測試"]:
+
+    clear_expired()
+
+    preview = "明日是否在營及事故回報：\n"
+
+    for member_name, info in data["members"].items():
+
+        show_text = ""
+
+        if should_show(info):
+
+            show_text = info.get("text", "")
+
+        preview += f"\n{member_name}：{show_text}"
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=preview)
+    )
+
+    return
 
     # =====================
     # 格式：
