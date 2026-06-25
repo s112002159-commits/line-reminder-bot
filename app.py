@@ -198,22 +198,7 @@ def should_show(info):
     # =====================
     if show_once:
 
-        try:
-
-            target_date = datetime.datetime.strptime(
-                start,
-                "%Y/%m/%d"
-            ).date()
-
-            if tomorrow == target_date:
-
-                return True
-
-            return False
-
-        except:
-
-            return False
+    return True
 
     # =====================
     # 多日事件
@@ -488,6 +473,11 @@ def handle_message(event):
             content
         )
 
+        multi_match = re.search(
+    r"(\d{1,2})/(\d{1,2})-(\d{1,2})/(\d{1,2})",
+    content
+        )
+
         if multi_match:
 
             start_month = int(
@@ -515,31 +505,12 @@ def handle_message(event):
 
         else:
 
-            # =====================
-            # 單日事件
-            # =====================
-            single_match = re.search(
-                r"(\d{1,2})/(\d{1,2})",
-                content
-            )
-
-            if single_match:
-
-                month = int(
-                    single_match.group(1)
-                )
-
-                day = int(
-                    single_match.group(2)
-                )
-
-                data["members"][name] = {
-                    "text": content,
-                    "start": f"{year}/{month:02d}/{day:02d}",
-                    "expire": "",
-                    "show_once": True
-                }
-
+    data["members"][name] = {
+        "text": content,
+        "start": taiwan_now().date().strftime("%Y/%m/%d"),
+        "expire": "",
+        "show_once": True
+    }
         save_data(data)
 
         line_bot_api.reply_message(
