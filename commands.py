@@ -1,164 +1,159 @@
 from storage import load_data, save_data
-from config import DEFAULT_MEMBERS, VERSION, BUILD
-from holiday import today
-import datetime
+from event_manager import build_report
+from config import DEFAULT_MEMBERS, ADMIN_USERS
 
-# ==========================
-# HELP
-# ==========================
+VERSION = "2.0.0"
 
-HELP_TEXT = """
-LINE 回報 Bot 使用說明
 
-====================
+def is_admin(user_id):
 
-【臨時事故】
+    return user_id in ADMIN_USERS
 
+
+# =========================
+# /help
+# =========================
+def help_message():
+
+    return """📖 LINE 回報機器人使用說明
+
+【事故輸入】
+
+無日期
 宗旂：休
+佳峻：公差
 
-→ 今日14:55發送一次
-→ 發送後自動清除
+今天14:55發送一次後自動清除
 
-====================
+--------------------
 
-【單日事故】
+單日
 
-宗旂：7/1休假
+宗旂：6/29休假
 
-→ 6/30回報一次
+僅於6/28回報一次
 
-====================
+--------------------
 
-【多日事故】
+多日
 
-宗旂：7/1-7/3休假
+宗旂：6/29-7/3出國
 
-→ 6/30開始
-→ 7/2最後一次
-→ 7/3自動清除
+6/28開始回報
 
-====================
+一直回報到7/2
 
-管理指令
+7/3自動恢復空白
+
+--------------------
+
+查詢
 
 /help
 /h
 
+查看說明
+
 /list
+
+查看目前所有事故
 
 /status
 
+查看目前儲存資料
+
 /members
+
+查看固定名單
 
 /version
 
-/clear 姓名
-
-/reset
+查看版本
 
 #測試
-
 /測試
+
+預覽今天14:55將發送內容
 """
 
-# ==========================
-# HELP
-# ==========================
 
-def help_text():
-    return HELP_TEXT
+# =========================
+# /members
+# =========================
+def members():
 
-# ==========================
-# MEMBERS
-# ==========================
+    msg = "固定人員：\n"
 
-def member_text():
+    for member in DEFAULT_MEMBERS:
 
-    text = "固定名單\n"
-
-    for name in DEFAULT_MEMBERS:
-
-        text += f"\n{name}"
-
-    return text
-
-# ==========================
-# VERSION
-# ==========================
-
-def version_text():
-
-    return f"""
-
-LINE Reminder Bot
-
-{VERSION}
-
-Build
-
-{BUILD}
-"""
-
-# ==========================
-# STATUS
-# ==========================
-
-def status_text():
-
-    data = load_data()
-
-    msg = "目前資料庫狀態\n"
-
-    for name, info in data["members"].items():
-
-        msg += f"""
-
-{name}
-
-type : {info['type']}
-
-text : {info['text']}
-
-start : {info['start']}
-
-expire : {info['expire']}
-"""
+        msg += f"\n• {member}"
 
     return msg
 
-# ==========================
-# LIST
-# ==========================
 
-def list_text():
+# =========================
+# /version
+# =========================
+def version():
+
+    return f"LINE Reminder Bot\nVersion {VERSION}"
+
+
+# =========================
+# /list
+# =========================
+def list_events():
 
     data = load_data()
 
-    msg = "目前事故\n"
+    msg = "目前事故：\n"
 
     for name, info in data["members"].items():
 
-        text = info["text"]
+        if info["text"]:
 
-        if text == "":
-
-            text = "無"
-
-        msg += f"\n{name}：{text}"
+            msg += f"\n{name}：{info['text']}"
 
     return msg
 
-# ==========================
-# RESET
-# ==========================
 
-def reset_all():
+# =========================
+# /status
+# =========================
+def status():
 
     data = load_data()
 
-    for name in data["members"]:
+    return f"""目前狀態
 
-        data["members"][name] = {
+好友數：
+
+{len(data['users'])}
+
+群組數：
+
+{len(data['groups'])}
+
+人員：
+
+{len(data['members'])}
+"""
+
+
+# =========================
+# /clear
+# =========================
+def clear(user_id):
+
+    if not is_admin(user_id):
+
+        return "❌ 沒有權限"
+
+    data = load_data()
+
+    for member in data["members"]:
+
+        data["members"][member] = {
 
             "text": "",
 
@@ -166,52 +161,56 @@ def reset_all():
 
             "expire": "",
 
-            "show_once": False,
-
-            "type": ""
+            "show_once": False
 
         }
 
     save_data(data)
 
-    return "✅ 已全部清除"
+    return "✅ 已清除全部事故"
 
-# ==========================
-# CLEAR
-# ==========================
 
-def clear_member(name):
+# =========================
+# /reset
+# =========================
+def reset(user_id):
 
-    data = load_data()
+    if not is_admin(user_id):
 
-    if name not in data["members"]:
+        return "❌ 沒有權限"
 
-        return "找不到此人"
+    data = {
 
-    data["members"][name] = {
+        "users": [],
 
-        "text": "",
+        "groups": [],
 
-        "start": "",
-
-        "expire": "",
-
-        "show_once": False,
-
-        "type": ""
+        "members": {}
 
     }
 
+    for member in DEFAULT_MEMBERS:
+
+        data["members"][member] = {
+
+            "text": "",
+
+            "start": "",
+
+            "expire": "",
+
+            "show_once": False
+
+        }
+
     save_data(data)
 
-    return f"✅ 已清除 {name}"
+    return "✅ 系統已重置"
 
-# ==========================
-# 預覽明日回報
-# ==========================
 
+# =========================
+# 預覽
+# =========================
 def preview():
 
-    from scheduler import build_message
-
-    return build_message()
+    return build_report()
