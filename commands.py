@@ -214,3 +214,32 @@ def reset(user_id):
 def preview():
 
     return build_report()
+
+def process_command(text):
+
+    if text == "/help":
+        return """
+指令列表：
+
+/help
+/list
+/members
+/status
+/reset
+/clear
+/version
+
+#測試
+"""
+
+    elif text == "/version":
+        return "LINE Reminder Bot v1.0"
+
+
+    elif text == "#測試":
+        return "測試成功"
+
+
+    else:
+        return "未知指令，輸入 /help"
+
