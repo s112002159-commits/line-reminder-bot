@@ -13,34 +13,42 @@ from holiday import (
 
 
 
+from datetime import datetime
+
+from storage import load_data
+
+
+
 def generate_report():
 
 
     data=load_data()
 
 
-    message="明日是否在營及事故回報：\n\n"
+    today=datetime.now()
 
+
+    message="明日是否在營及事故回報：\n\n"
 
 
     for member in data["members"]:
 
 
-        status=""
+        result=""
 
 
-        for e in data["events"]:
+        for event in data["events"]:
 
 
-            if e["name"]==member:
+            if event["name"]==member:
 
 
-                status=e["content"]
+                result=event["content"]
 
 
 
         message += (
-            f"{member}：{status}\n"
+            f"{member}：{result}\n"
         )
 
 
