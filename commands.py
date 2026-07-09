@@ -55,15 +55,15 @@ def process_command(text):
 
 
 
-    if text in [
-        "#測試",
-        "/測試"
+    if text.lower() in [
+    "#test",
+    "/test"
+        
     ]:
 
-        from scheduler import generate_report
+    from scheduler import generate_report
 
-        return generate_report()
-
+    return generate_report()
 
 
     if text=="/members":
