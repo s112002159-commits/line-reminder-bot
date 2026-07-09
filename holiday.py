@@ -1,44 +1,38 @@
-
-import holidays
 import datetime
-import pytz
+import holidays
 
-taiwan_tz = pytz.timezone(
-    "Asia/Taipei"
-)
+from config import TIMEZONE
 
 tw_holidays = holidays.Taiwan()
 
+
 def now():
 
-    return datetime.datetime.now(
-        taiwan_tz
-    )
+    return datetime.datetime.now(TIMEZONE)
+
 
 def today():
 
     return now().date()
 
+
 def tomorrow():
 
-    return (
-        today()
-        + datetime.timedelta(days=1)
-    )
+    return today() + datetime.timedelta(days=1)
 
-def is_workday(date_obj):
 
-    if date_obj.weekday() >= 5:
+def is_workday(date):
 
+    if date.weekday() >= 5:
         return False
 
-    if date_obj in tw_holidays:
-
+    if date in tw_holidays:
         return False
 
     return True
 
-def is_tomorrow_workday():
+
+def tomorrow_is_workday():
 
     return is_workday(
         tomorrow()
