@@ -1,7 +1,33 @@
-import datetime
-try:
- from workalendar.asia import Taiwan
- cal=Taiwan()
-except Exception: cal=None
-def is_workday(d):
-    return d.weekday()<5 and (not cal or cal.is_working_day(d))
+import holidays
+from datetime import datetime, timedelta
+
+
+tw_holidays = holidays.Taiwan()
+
+
+
+def is_workday(date=None):
+
+    if date is None:
+        date = datetime.now()
+
+
+    # 六日
+    if date.weekday() >= 5:
+        return False
+
+
+    # 國定假日
+    if date.date() in tw_holidays:
+        return False
+
+
+    return True
+
+
+
+def is_tomorrow_workday():
+
+    tomorrow = datetime.now() + timedelta(days=1)
+
+    return is_workday(tomorrow)
