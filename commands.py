@@ -1,15 +1,10 @@
-from event_manager import (
-    parse_event,
-    clear_event,
-    reset_events
-)
-
 from storage import load_data
+from event_manager import parse_event, clear_event, reset_events
+from scheduler import generate_report
 
 
 
 HELP_TEXT = """
-
 LINE事故回報系統
 
 指令：
@@ -17,8 +12,8 @@ LINE事故回報系統
 /help /h
 使用說明
 
-#測試 /測試
-預覽今天15:00發送內容
+/test #test
+預覽15:00回報內容
 
 /list
 查看所有事故
@@ -29,22 +24,44 @@ LINE事故回報系統
 /members
 查看固定名單
 
-/clear 姓名
+/clear 人名
 清除指定事故
 
 /reset
 清空所有事故
 
+/version
+查看版本
 """
+
+
+
+def is_member_event(text):
+
+    if "：" not in text:
+        return False
+
+
+    name = text.split("：")[0]
+
+
+    data = load_data()
+
+
+    return name in data["members"]
+
+
 
 
 
 def process_command(text):
 
 
-    text=text.strip()
+    text = text.strip()
 
 
+
+    # HELP
 
     if text in [
         "/help",
@@ -55,56 +72,86 @@ def process_command(text):
 
 
 
+
+
+    # 測試發送
+
     if text.lower() in [
-    "#test",
-    "/test"
-        
+        "/test",
+        "#test"
     ]:
 
-    from scheduler import generate_report
-
-    return generate_report()
+        return generate_report()
 
 
-    if text=="/members":
 
-        data=load_data()
+
+
+    # 查看固定名單
+
+    if text == "/members":
+
+        data = load_data()
+
 
         return (
             "固定名單：\n"
             +
-            "\n".join(data["members"])
+            "\n".join(
+                data["members"]
+            )
         )
 
 
 
-    if text=="/status":
-
-        data=load_data()
-
-        return str(data["events"])
 
 
+    # 查看事件
 
-    if text=="/list":
+    if text == "/list":
 
-        data=load_data()
+
+        data = load_data()
+
 
         if not data["events"]:
 
-            return "目前無事故"
+            return "目前沒有事故"
 
 
-        return "\n".join(
 
-            [
-                f'{e["name"]}：{e["content"]}'
-                for e in data["events"]
-            ]
-
-        )
+        result="目前事故：\n"
 
 
+
+        for event in data["events"]:
+
+            result += (
+                f'{event["name"]}：'
+                f'{event["content"]}\n'
+            )
+
+
+        return result
+
+
+
+
+
+    # 系統狀態
+
+    if text == "/status":
+
+        data=load_data()
+
+
+        return str(data)
+
+
+
+
+
+    # 清除指定人員
 
     if text.startswith("/clear"):
 
@@ -117,34 +164,47 @@ def process_command(text):
 
         if not name:
 
-            return "請輸入姓名"
+            return "格式：/clear 人名"
 
 
         return clear_event(name)
 
 
 
-    if text=="/reset":
+
+
+    # 清空全部
+
+    if text == "/reset":
 
         return reset_events()
 
 
 
-    if text=="/version":
-
-        return "LINE Reminder Bot v2.0"
 
 
+    # 版本
 
-    #事故格式
+    if text == "/version":
 
-    if "：" in text:
+        return "LINE Reminder Bot v2.1"
+
+
+
+
+
+    # 只有固定名單+冒號才判斷事故
+
+    if is_member_event(text):
+
 
         return parse_event(text)
 
 
 
+
+
     return (
-        "未知指令\n"
-        "輸入 /help 查看"
+        "無法辨識指令\n"
+        "請輸入 /help"
     )
