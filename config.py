@@ -63,3 +63,20 @@ DEFAULT_MEMBERS = [
 
 SEND_HOUR = 14
 SEND_MINUTE = 55
+
+import os
+
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv(
+    "LINE_CHANNEL_ACCESS_TOKEN"
+)
+
+LINE_CHANNEL_SECRET = os.getenv(
+    "LINE_CHANNEL_SECRET"
+)
+
+PORT = int(
+    os.environ.get(
+        "PORT",
+        5000
+    )
+)
