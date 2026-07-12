@@ -1,187 +1,159 @@
+import datetime
 import re
-from datetime import datetime
 
-
+from holiday import today
 from storage import (
     load_data,
     save_data
 )
 
-
-
-def parse_event(text):
-
+def parse_event(name, content):
 
     data = load_data()
 
-    members = data["members"]
-
-
-    target = None
-
-
-    for name in members:
-
-        if text.startswith(name):
-
-            target = name
-
-            break
-
-
-
-    if not target:
-
-        return "格式錯誤，請使用：\n姓名：事故"
-
-
-
-    if "：" not in text:
-
-        return "請加入冒號，例如：\n宗旂：休"
-
-
-
-    content = text.split("：",1)[1]
-
-
-    today = datetime.now().strftime("%Y-%m-%d")
-
-
-
-    event = {
-
-        "name":target,
-
-        "content":content,
-
-        "start":today,
-
-        "end":today,
-
-        "type":"temporary"
-
-    }
-
-
+    year = today().year
 
     # 多日
-
-    date_range = re.search(
-        r"(\d{1,2}/\d{1,2})-(\d{1,2}/\d{1,2})",
+    multi = re.search(
+        r"(\d{1,2})/(\d{1,2})-(\d{1,2})/(\d{1,2})",
         content
     )
 
+    if multi:
 
-    if date_range:
+        sm = int(multi.group(1))
+        sd = int(multi.group(2))
 
+        em = int(multi.group(3))
+        ed = int(multi.group(4))
 
-        event["type"]="range"
+        data["members"][name] = {
 
+            "text": content,
 
-        event["start"]=date_range.group(1)
+            "start": f"{year}/{sm:02d}/{sd:02d}",
 
-        event["end"]=date_range.group(2)
+            "expire": f"{year}/{em:02d}/{ed:02d}",
 
+            "show_once": False,
 
+            "type": "multi"
 
-    else:
+        }
 
+        save_data(data)
 
-        # 單日
+        return
 
-        single = re.search(
-            r"(\d{1,2}/\d{1,2})",
-            content
-        )
+    # 單日
+    single = re.search(
+        r"(\d{1,2})/(\d{1,2})",
+        content
+    )
 
+    if single:
 
-        if single:
+        month = int(single.group(1))
+        day = int(single.group(2))
 
-            event["type"]="single"
+        data["members"][name] = {
 
-            event["start"]=single.group(1)
+            "text": content,
 
-            event["end"]=single.group(1)
+            "start": f"{year}/{month:02d}/{day:02d}",
 
+            "expire": "",
 
+            "show_once": True,
 
-    data["events"].append(event)
+            "type": "single"
 
+        }
+
+        save_data(data)
+
+        return
+
+    # 臨時
+    data["members"][name] = {
+
+        "text": content,
+
+        "start": today().strftime(
+            "%Y/%m/%d"
+        ),
+
+        "expire": "",
+
+        "show_once": True,
+
+        "type": "temp"
+
+    }
 
     save_data(data)
 
-
-
-    return (
-        f"已登記：\n"
-        f"{target}：{content}"
-    )
-
-
-
-
-
-def get_today_events():
+def clear_expired():
 
     data = load_data()
 
-    today=datetime.now()
+    current = today()
 
+    for name, info in data["members"].items():
 
-    result=[]
+        event_type = info.get(
+            "type",
+            ""
+        )
 
-
-    for e in data["events"]:
-
-
-        if e["type"]=="temporary":
+        if event_type == "temp":
 
             continue
 
+        if event_type == "single":
 
+            target = datetime.datetime.strptime(
+                info["start"],
+                "%Y/%m/%d"
+            ).date()
 
-        result.append(
-            f'{e["name"]}：{e["content"]}'
-        )
+            if current > target:
 
+                data["members"][name] = {
 
-    return result
+                    "text": "",
 
+                    "start": "",
 
+                    "expire": "",
 
+                    "show_once": False,
 
+                    "type": ""
 
-def clear_event(name):
+                }
 
-    data=load_data()
+        if event_type == "multi":
 
+            expire = datetime.datetime.strptime(
+                info["expire"],
+                "%Y/%m/%d"
+            ).date()
 
-    data["events"]=[
+            if current > expire:
 
-        e for e in data["events"]
+                data["members"][name] = {
 
-        if e["name"]!=name
+                    "text": "",
 
-    ]
+                    "start": "",
 
+                    "expire": "",
+
+                    "show_once": False,
+
+                    "type": ""
+
+                }
 
     save_data(data)
-
-
-    return f"{name}事故已清除"
-
-
-
-
-
-def reset_events():
-
-    data=load_data()
-
-    data["events"]=[]
-
-    save_data(data)
-
-
-    return "全部事故已清空"
