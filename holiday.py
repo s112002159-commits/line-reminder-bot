@@ -1,27 +1,44 @@
 import holidays
-from datetime import date, timedelta
+import datetime
+import pytz
 
+taiwan_tz = pytz.timezone(
+    "Asia/Taipei"
+)
 
 tw_holidays = holidays.Taiwan()
 
+def now():
 
-def is_workday(target_date):
-    """
-    判斷指定日期是否工作日
-    """
-    if target_date.weekday() >= 5:
+    return datetime.datetime.now(
+        taiwan_tz
+    )
+
+def today():
+
+    return now().date()
+
+def tomorrow():
+
+    return (
+        today()
+        + datetime.timedelta(days=1)
+    )
+
+def is_workday(date_obj):
+
+    if date_obj.weekday() >= 5:
+
         return False
 
-    if target_date in tw_holidays:
+    if date_obj in tw_holidays:
+
         return False
 
     return True
 
-
 def is_tomorrow_workday():
-    """
-    判斷明天是否上班
-    """
-    tomorrow = date.today() + timedelta(days=1)
 
-    return is_workday(tomorrow)
+    return is_workday(
+        tomorrow()
+    )
