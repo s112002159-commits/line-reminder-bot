@@ -4,9 +4,10 @@ from linebot.v3.webhook import WebhookParser
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
+import os
+
 from config import (
-    LINE_CHANNEL_SECRET,
-    PORT
+    LINE_CHANNEL_SECRET
 )
 
 from scheduler import (
@@ -158,7 +159,6 @@ if __name__ == "__main__":
     print("=" * 50)
 
     app.run(
-        host="0.0.0.0",
-        port=PORT,
-        debug=False
-    )
+    host="0.0.0.0",
+    port=int(os.environ.get("PORT",5000))
+        )
