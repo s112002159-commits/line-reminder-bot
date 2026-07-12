@@ -1,210 +1,217 @@
-from storage import load_data
-from event_manager import parse_event, clear_event, reset_events
-from scheduler import generate_report
+from storage import load_data, save_data
+from config import DEFAULT_MEMBERS, VERSION, BUILD
+from holiday import today
+import datetime
 
-
+# ==========================
+# HELP
+# ==========================
 
 HELP_TEXT = """
-LINE事故回報系統
+LINE 回報 Bot 使用說明
 
-指令：
+====================
 
-/help /h
-使用說明
+【臨時事故】
 
-/test #test
-預覽15:00回報內容
+宗旂：休
+
+→ 今日14:55發送一次
+→ 發送後自動清除
+
+====================
+
+【單日事故】
+
+宗旂：7/1休假
+
+→ 6/30回報一次
+
+====================
+
+【多日事故】
+
+宗旂：7/1-7/3休假
+
+→ 6/30開始
+→ 7/2最後一次
+→ 7/3自動清除
+
+====================
+
+管理指令
+
+/help
+/h
 
 /list
-查看所有事故
 
 /status
-查看目前儲存事件
 
 /members
-查看固定名單
-
-/clear 人名
-清除指定事故
-
-/reset
-清空所有事故
 
 /version
-查看版本
+
+/clear 姓名
+
+/reset
+
+#測試
+
+/測試
 """
 
+# ==========================
+# HELP
+# ==========================
 
+def help_text():
+    return HELP_TEXT
 
-def is_member_event(text):
+# ==========================
+# MEMBERS
+# ==========================
 
-    if "：" not in text:
-        return False
+def member_text():
 
+    text = "固定名單\n"
 
-    name = text.split("：")[0]
+    for name in DEFAULT_MEMBERS:
 
+        text += f"\n{name}"
+
+    return text
+
+# ==========================
+# VERSION
+# ==========================
+
+def version_text():
+
+    return f"""
+
+LINE Reminder Bot
+
+{VERSION}
+
+Build
+
+{BUILD}
+"""
+
+# ==========================
+# STATUS
+# ==========================
+
+def status_text():
 
     data = load_data()
 
+    msg = "目前資料庫狀態\n"
 
-    return name in data["members"]
+    for name, info in data["members"].items():
 
+        msg += f"""
 
+{name}
 
+type : {info['type']}
 
+text : {info['text']}
 
-def process_command(text):
+start : {info['start']}
 
+expire : {info['expire']}
+"""
 
-    text = text.strip()
+    return msg
 
+# ==========================
+# LIST
+# ==========================
 
+def list_text():
 
-    # HELP
+    data = load_data()
 
-    if text in [
-        "/help",
-        "/h"
-    ]:
+    msg = "目前事故\n"
 
-        return HELP_TEXT
+    for name, info in data["members"].items():
 
+        text = info["text"]
 
+        if text == "":
 
+            text = "無"
 
+        msg += f"\n{name}：{text}"
 
-    # 測試發送
+    return msg
 
-    if text.lower() in [
-        "/test",
-        "#test"
-    ]:
+# ==========================
+# RESET
+# ==========================
 
-        return generate_report()
+def reset_all():
 
+    data = load_data()
 
+    for name in data["members"]:
 
+        data["members"][name] = {
 
+            "text": "",
 
-    # 查看固定名單
+            "start": "",
 
-    if text == "/members":
+            "expire": "",
 
-        data = load_data()
+            "show_once": False,
 
+            "type": ""
 
-        return (
-            "固定名單：\n"
-            +
-            "\n".join(
-                data["members"]
-            )
-        )
+        }
 
+    save_data(data)
 
+    return "✅ 已全部清除"
 
+# ==========================
+# CLEAR
+# ==========================
 
+def clear_member(name):
 
-    # 查看事件
+    data = load_data()
 
-    if text == "/list":
+    if name not in data["members"]:
 
+        return "找不到此人"
 
-        data = load_data()
+    data["members"][name] = {
 
+        "text": "",
 
-        if not data["events"]:
+        "start": "",
 
-            return "目前沒有事故"
+        "expire": "",
 
+        "show_once": False,
 
+        "type": ""
 
-        result="目前事故：\n"
+    }
 
+    save_data(data)
 
+    return f"✅ 已清除 {name}"
 
-        for event in data["events"]:
+# ==========================
+# 預覽明日回報
+# ==========================
 
-            result += (
-                f'{event["name"]}：'
-                f'{event["content"]}\n'
-            )
+def preview():
 
+    from scheduler import build_message
 
-        return result
-
-
-
-
-
-    # 系統狀態
-
-    if text == "/status":
-
-        data=load_data()
-
-
-        return str(data)
-
-
-
-
-
-    # 清除指定人員
-
-    if text.startswith("/clear"):
-
-
-        name=text.replace(
-            "/clear",
-            ""
-        ).strip()
-
-
-        if not name:
-
-            return "格式：/clear 人名"
-
-
-        return clear_event(name)
-
-
-
-
-
-    # 清空全部
-
-    if text == "/reset":
-
-        return reset_events()
-
-
-
-
-
-    # 版本
-
-    if text == "/version":
-
-        return "LINE Reminder Bot v2.1"
-
-
-
-
-
-    # 只有固定名單+冒號才判斷事故
-
-    if is_member_event(text):
-
-
-        return parse_event(text)
-
-
-
-
-
-    return (
-        "無法辨識指令\n"
-        "請輸入 /help"
-    )
+    return build_message()
