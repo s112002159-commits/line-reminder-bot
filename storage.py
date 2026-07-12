@@ -1,22 +1,50 @@
 import json
 import os
 
+from config import (
+    DATA_FILE,
+    DEFAULT_MEMBERS
+)
 
-DATA_FILE = "data.json"
+def create_default_data():
 
+    members = {}
 
+    for name in DEFAULT_MEMBERS:
+
+        members[name] = {
+
+            "text": "",
+
+            "start": "",
+
+            "expire": "",
+
+            "show_once": False,
+
+            "type": ""
+
+        }
+
+    return {
+
+        "users": [],
+
+        "groups": [],
+
+        "members": members
+
+    }
 
 def load_data():
 
     if not os.path.exists(DATA_FILE):
 
-        return {
-            "members": [],
-            "events": [],
-            "users": [],
-            "groups": []
-        }
+        data = create_default_data()
 
+        save_data(data)
+
+        return data
 
     with open(
         DATA_FILE,
@@ -24,9 +52,31 @@ def load_data():
         encoding="utf-8"
     ) as f:
 
-        return json.load(f)
+        data = json.load(f)
 
+    if "members" not in data:
 
+        data["members"] = {}
+
+    for name in DEFAULT_MEMBERS:
+
+        if name not in data["members"]:
+
+            data["members"][name] = {
+
+                "text": "",
+
+                "start": "",
+
+                "expire": "",
+
+                "show_once": False,
+
+                "type": ""
+
+            }
+
+    return data
 
 def save_data(data):
 
@@ -40,18 +90,10 @@ def save_data(data):
             data,
             f,
             ensure_ascii=False,
-            indent=4
+            indent=2
         )
 
-
-
-def get_members():
-
-    return load_data()["members"]
-
-
-
-def save_user(user_id):
+def add_user(user_id):
 
     data = load_data()
 
@@ -61,9 +103,7 @@ def save_user(user_id):
 
         save_data(data)
 
-
-
-def save_group(group_id):
+def add_group(group_id):
 
     data = load_data()
 
