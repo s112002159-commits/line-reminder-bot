@@ -333,20 +333,6 @@ def send_job(force_send=False):
     return "OK"
 
 # =====================
-# 首頁
-# =====================
-@app.route("/")
-def home():
-    return "OK", 200
-
-# =====================
-# 外部喚醒
-# =====================
-@app.route("/wake")
-def wake():
-    return "awake", 200
-
-# =====================
 # cron-job 觸發
 # =====================
 @app.route("/trigger")
@@ -358,6 +344,7 @@ def trigger():
 
     except Exception as e:  
         return str(e), 500
+
 
 # =====================
 # LINE callback
@@ -502,14 +489,133 @@ def handle_message(event):
         content = match.group(2).strip()  
 
         if name not in data["members"]:  
+            return
+
+# =====================
+# 接收訊息
+# =====================
+@handler.add(
+    MessageEvent,
+    message=TextMessage
+)
+def handle_message(event):
+    text = event.message.text.strip()  
+
+    # 自動記錄發送者/群組 ID
+    if event.source.type == "user":  
+        add_user(event.source.user_id)  
+    elif event.source.type == "group":  
+        add_group(event.source.group_id)  
+
+    data = load_data()  
+
+    # =====================
+    # 斜線指令處理區塊
+    # =====================
+    if text.startswith("/"):
+        # 1. /h 使用說明
+        if text.lower() == "/h":
+            reply_text = (
+                "📖 使用說明指令表：\n\n"
+                "• /h - 查看說明清單\n"
+                "• /l - 查看所有成員事故\n"
+                "• /s - 查看目前儲存事件\n"
+                "• /c [姓名] - 清除指定人員事故 (例: /c 宗旂)\n"
+                "• /r - 清空所有成員事故\n\n"
+                "💡 回報格式範例：\n"
+                "• 單日：宗旂：6/1休假\n"
+                "• 多日：佳真：5/28出差至6/2"
+            )
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+            return
+
+        # 2. /l 查看所有事故
+        elif text.lower() == "/l":
+            clear_expired()
+            data = load_data()
+            msg_lines = ["📋 目前事故列表：\n"]
+            for name, info in data["members"].items():
+                status = info.get("text", "無")
+                if not status:
+                    status = "無"
+                msg_lines.append(f"• {name}：{status}")
+            
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="\n".join(msg_lines)))
+            return
+
+        # 3. /s 查看目前儲存事件詳情
+        elif text.lower() == "/s":
+            clear_expired()
+            data = load_data()
+            has_event = False
+            msg_lines = ["🔍 目前系統儲存之有效事件：\n"]
+            for name, info in data["members"].items():
+                if info.get("text"):
+                    has_event = True
+                    start = info.get("start", "-")
+                    expire = info.get("expire", "-")
+                    msg_lines.append(f"• {name}：{info['text']} (起:{start} 迄:{expire})")
+            
+            if not has_event:
+                msg_lines.append("目前沒有儲存任何事件。")
+                
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="\n".join(msg_lines)))
+            return
+
+        # 4. /c 某人 (清除指定人員)
+        elif text.lower().startswith("/c"):
+            target_name = text[2:].strip()
+            if not target_name:
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text="⚠️ 請指定要清除的人員，例：/c 宗旂"))
+                return
+
+            if target_name in data["members"]:
+                data["members"][target_name] = {
+                    "text": "",
+                    "start": "",
+                    "expire": "",
+                    "show_once": False
+                }
+                save_data(data)
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"✅ 已清除 {target_name} 的事故紀錄"))
+            else:
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"❌ 找不到成員：{target_name}"))
+            return
+
+        # 5. /r 清空所有事故
+        elif text.lower() == "/r":
+            for name in data["members"]:
+                data["members"][name] = {
+                    "text": "",
+                    "start": "",
+                    "expire": "",
+                    "show_once": False
+                }
+            save_data(data)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="✅ 已清空所有人事故資料"))
+            return
+
+    # =====================  
+    # 一般更新事件格式處理：  
+    # 宗旂：6/1休假  
+    # 佳真：5/28出差至6/2  
+    # =====================  
+    match = re.match(  
+        r"(.+?)：(.+)",  
+        text  
+    )  
+
+    if match:  
+        name = match.group(1).strip()  
+        content = match.group(2).strip()  
+
+        if name not in data["members"]:  
             return  
 
         today = taiwan_now().date()
         year = today.year  
 
-        # =====================  
         # 多日事件  
-        # =====================  
         multi_match = re.search(  
             r"(\d{1,2})/(\d{1,2}).*至(\d{1,2})/(\d{1,2})",  
             content  
@@ -532,9 +638,7 @@ def handle_message(event):
             }  
 
         else:  
-            # =====================  
             # 單日事件  
-            # =====================  
             single_match = re.search(  
                 r"(\d{1,2})/(\d{1,2})",  
                 content  
@@ -545,32 +649,6 @@ def handle_message(event):
                 day = int(single_match.group(2))  
 
                 target_year = year + 1 if month < today.month else year
-
-                data["members"][name] = {  
-                    "text": content,  
-                    "start": f"{target_year}/{month:02d}/{day:02d}",  
-                    "expire": "",  
-                    "show_once": True  
-                }  
-
-        save_data(data)  
-
-        line_bot_api.reply_message(  
-            event.reply_token,  
-            TextSendMessage(  
-                text=f"✅ 已更新 {name}"  
-            )  
-        )
-
-# =====================
-# 啟動
-# =====================
-if __name__ == "__main__":
-    app.run(  
-        host="0.0.0.0",  
-        port=5000  
-    )
-get_year = year + 1 if month < today.month else year
 
                 data["members"][name] = {  
                     "text": content,  
