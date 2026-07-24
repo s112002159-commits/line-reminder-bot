@@ -14,8 +14,8 @@ import json
 import re
 import pytz
 
-# 修正：name 必須改為 __name__
-app = Flask(__name__) 
+# 修正 1：Flask 變數名稱修正
+app = Flask(__name__)
 
 # =====================
 # 台灣時間
@@ -25,8 +25,8 @@ taiwan_tz = pytz.timezone(
 )
 
 def taiwan_now():
-    return datetime.datetime.now(
-        taiwan_tz
+    return datetime.datetime.now(  
+        taiwan_tz  
     )
 
 # =====================
@@ -49,77 +49,89 @@ FILE = "data.json"
 # 固定名單
 # =====================
 DEFAULT_MEMBERS = [
-    "造賓", "佳真", "宗旂", "培昇", 
-    "季家", "佳峻", "彥呈", "欣雯"
+    "造賓",
+    "佳真",
+    "宗旂",
+    "培昇",
+    "季家",
+    "佳峻",
+    "彥呈",
+    "欣雯"
 ]
 
 # =====================
 # 讀取資料
 # =====================
 def load_data():
-    members = {}
-    for name in DEFAULT_MEMBERS:
-        members[name] = {    
-            "text": "",    
-            "start": "",    
-            "expire": "",    
-            "show_once": False    
-        }
+    members = {}  
 
-    if not os.path.exists(FILE):
-        return {    
-            "users": [],    
-            "groups": [],    
-            "members": members    
-        }
+    for name in DEFAULT_MEMBERS:  
+        members[name] = {  
+            "text": "",  
+            "start": "",  
+            "expire": "",  
+            "show_once": False  
+        }  
 
-    with open(FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    if not os.path.exists(FILE):  
+        return {  
+            "users": [],  
+            "groups": [],  
+            "members": members  
+        }  
 
-    if "members" not in data:
-        data["members"] = members
+    with open(FILE, "r", encoding="utf-8") as f:  
+        data = json.load(f)  
 
-    for name in DEFAULT_MEMBERS:
-        if name not in data["members"]:    
-            data["members"][name] = {    
-                "text": "",    
-                "start": "",    
-                "expire": "",    
-                "show_once": False    
-            }
+    if "members" not in data:  
+        data["members"] = members  
 
-    save_data(data)
+    for name in DEFAULT_MEMBERS:  
+        if name not in data["members"]:  
+            data["members"][name] = {  
+                "text": "",  
+                "start": "",  
+                "expire": "",  
+                "show_once": False  
+            }  
+
+    save_data(data)  
     return data
 
 # =====================
 # 儲存資料
 # =====================
 def save_data(data):
-    with open(FILE, "w", encoding="utf-8") as f:
-        json.dump(    
-            data,    
-            f,    
-            ensure_ascii=False,    
-            indent=2    
+    with open(FILE, "w", encoding="utf-8") as f:  
+        json.dump(  
+            data,  
+            f,  
+            ensure_ascii=False,  
+            indent=2  
         )
 
 # =====================
 # 記錄好友
 # =====================
 def add_user(user_id):
-    data = load_data()
-    if user_id not in data["users"]:
-        data["users"].append(user_id)
-        save_data(data)
+    data = load_data()  
+
+    if user_id not in data["users"]:  
+        data["users"].append(user_id)  
+
+    save_data(data)
 
 # =====================
 # 記錄群組
 # =====================
 def add_group(group_id):
-    data = load_data()
-    if group_id not in data["groups"]:
-        data["groups"].append(group_id)
-        save_data(data)
+    data = load_data()  
+
+    if group_id not in data["groups"]:  
+
+        data["groups"].append(group_id)  
+
+    save_data(data)
 
 # =====================
 # 台灣假日判斷
@@ -127,18 +139,18 @@ def add_group(group_id):
 tw_holidays = holidays.Taiwan()
 
 def is_tomorrow_workday():
-    tomorrow = (
-        taiwan_now().date()
-        + datetime.timedelta(days=1)
-    )
+    tomorrow = (  
+        taiwan_now().date()  
+        + datetime.timedelta(days=1)  
+    )  
 
-    # 星期六日
-    if tomorrow.weekday() >= 5:
-        return False
+    # 星期六日  
+    if tomorrow.weekday() >= 5:  
+        return False  
 
-    # 台灣國定假日
-    if tomorrow in tw_holidays:
-        return False
+    # 台灣國定假日  
+    if tomorrow in tw_holidays:  
+        return False  
 
     return True
 
@@ -146,161 +158,335 @@ def is_tomorrow_workday():
 # 判斷是否顯示
 # =====================
 def should_show(info):
-    today = taiwan_now().date()
-    tomorrow = (
-        today
-        + datetime.timedelta(days=1)
-    )
+    today = taiwan_now().date()  
 
-    text = info.get("text", "")
-    start = info.get("start", "")
-    expire = info.get("expire", "")
-    show_once = info.get("show_once", False)
+    tomorrow = (  
+        today  
+        + datetime.timedelta(days=1)  
+    )  
 
-    if text == "":
-        return False
+    text = info.get("text", "")  
+    start = info.get("start", "")  
+    expire = info.get("expire", "")  
+    show_once = info.get("show_once", False)  
 
-    # =====================
-    # 單日事件
-    # 範例：
-    # 小明：6/1休假
-    # 5/31 回報明日才顯示
-    # =====================
-    if show_once:
-        return False
+    if text == "":  
+        return False  
 
-    # =====================
-    # 多日事件
-    # 範例：
-    # 5/28出差至6/2
-    # 5/27開始顯示
-    # 6/1停止顯示
-    # =====================
-    try:
-        start_date = datetime.datetime.strptime(    
-            start,    
-            "%Y/%m/%d"    
-        ).date()    
+    # =====================  
+    # 單日事件  
+    # 範例：  
+    # 小明：6/1休假  
+    # 5/31 回報明日才顯示  
+    # =====================  
+    if show_once:  
+        try:  
+            target_date = datetime.datetime.strptime(  
+                start,  
+                "%Y/%m/%d"  
+            ).date()  
 
-        expire_date = datetime.datetime.strptime(    
-            expire,    
-            "%Y/%m/%d"    
-        ).date()    
+            if tomorrow == target_date:  
+                return True  
 
-        show_start = (    
-            start_date    
-            - datetime.timedelta(days=1)    
-        )    
+            return False  
 
-        show_end = (    
-            expire_date    
-            - datetime.timedelta(days=2)    
-        )    
+        except:  
+            return False  
 
-        if show_start <= today <= show_end:    
-            return True    
+    # =====================  
+    # 多日事件  
+    # 範例：  
+    # 5/28出差至6/2  
+    # 5/27開始顯示  
+    # 6/1停止顯示  
+    # =====================  
+    try:  
+        start_date = datetime.datetime.strptime(  
+            start,  
+            "%Y/%m/%d"  
+        ).date()  
 
-        return False
+        expire_date = datetime.datetime.strptime(  
+            expire,  
+            "%Y/%m/%d"  
+        ).date()  
 
-    except:
+        show_start = (  
+            start_date  
+            - datetime.timedelta(days=1)  
+        )  
+
+        show_end = (  
+            expire_date  
+            - datetime.timedelta(days=2)  
+        )  
+
+        if show_start <= today <= show_end:  
+            return True  
+
+        return False  
+
+    except:  
         return False
 
 # =====================
 # 清理過期資料
 # =====================
 def clear_expired():
-    data = load_data()
-    today = taiwan_now().date()
+    data = load_data()  
+    today = taiwan_now().date()  
 
-    for name, info in data["members"].items():
-        expire = info.get("expire", "")    
-        start = info.get("start", "")    
-        show_once = info.get("show_once", False)    
+    for name, info in data["members"].items():  
+        expire = info.get("expire", "")  
+        start = info.get("start", "")  
+        show_once = info.get("show_once", False)  
 
-        # =====================    
-        # 單日事件    
-        # =====================    
-        if show_once:    
-            try:    
-                target_date = datetime.datetime.strptime(    
-                    start,    
-                    "%Y/%m/%d"    
-                ).date()    
+        # =====================  
+        # 單日事件  
+        # =====================  
+        if show_once:  
+            try:  
+                target_date = datetime.datetime.strptime(  
+                    start,  
+                    "%Y/%m/%d"  
+                ).date()  
 
-                if today > target_date:    
-                    data["members"][name] = {    
-                        "text": "",    
-                        "start": "",    
-                        "expire": "",    
-                        "show_once": False    
-                    }    
-            except:    
-                pass    
+                if today > target_date:  
+                    data["members"][name] = {  
+                        "text": "",  
+                        "start": "",  
+                        "expire": "",  
+                        "show_once": False  
+                    }  
 
-        # =====================    
-        # 多日事件    
-        # =====================    
-        elif expire:    
-            try:    
-                expire_date = datetime.datetime.strptime(    
-                    expire,    
-                    "%Y/%m/%d"    
-                ).date()    
+            except:  
+                pass  
 
-                if today >= expire_date:    
-                    # 注意：你提供的程式碼在這裡被截斷了，請補齊後續邏輯。
-                    data["members"][name] = {
-                        "text": "",    
-                        "start": "",    
-                        "expire": "",    
-                        "show_once": False
-                    }
-            except:
-                pass
-    
+        # =====================  
+        # 多日事件  
+        # =====================  
+        elif expire:  
+            try:  
+                expire_date = datetime.datetime.strptime(  
+                    expire,  
+                    "%Y/%m/%d"  
+                ).date()  
+
+                if today >= expire_date:  
+                    data["members"][name] = {  
+                        "text": "",  
+                        "start": "",  
+                        "expire": "",  
+                        "show_once": False  
+                    }  
+
+            except:  
+                pass  
+
     save_data(data)
-    
-# =====================
-# 首頁測試路由 (供瀏覽器點擊檢查)
-# =====================
-@app.route("/", methods=['GET'])
-def index():
-    return "Line Bot is running smoothly!", 200
 
 # =====================
-# LINE Webhook 接收點
+# 發送每日回報
+# =====================
+def send_job():
+    if not is_tomorrow_workday():  
+        print("⛔ 明日是假日，不發送")  
+        return  
+
+    clear_expired()  
+
+    data = load_data()  
+
+    msg = "明日是否在營及事故回報：\n"  
+
+    for name, info in data["members"].items():  
+        text = ""  
+
+        if should_show(info):  
+            text = info.get("text", "")  
+
+        msg += f"\n{name}：{text}"  
+
+    # 發送好友  
+    for user in data["users"]:  
+
+        try:  
+            line_bot_api.push_message(  
+                user,  
+                TextSendMessage(text=msg)  
+            )  
+
+        except Exception as e:  
+            print("User Error:", e)  
+
+    # 發送群組  
+    for group in data["groups"]:  
+
+        try:  
+            line_bot_api.push_message(  
+                group,  
+                TextSendMessage(text=msg)  
+            )  
+
+        except Exception as e:  
+            print("Group Error:", e)  
+
+    print("✅ 發送完成")
+
+# =====================
+# 首頁
+# =====================
+@app.route("/")
+def home():
+    return "OK", 200
+
+# =====================
+# 外部喚醒
+# =====================
+@app.route("/wake")
+def wake():
+    return "awake", 200
+
+# =====================
+# cron-job 觸發
+# =====================
+@app.route("/trigger")
+def trigger():
+    try:  
+        send_job()  
+        return "success", 200  
+
+    except Exception as e:  
+        return str(e), 500
+
+# =====================
+# LINE callback
 # =====================
 @app.route("/callback", methods=['POST'])
 def callback():
-    # 取得 LINE 傳來的 X-Line-Signature header
-    signature = request.headers.get('X-Line-Signature')
+    signature = request.headers.get(  
+        'X-Line-Signature'  
+    )  
 
-    # 取得請求內容
-    body = request.get_data(as_text=True)
-    app.logger.info("Request body: " + body)
+    body = request.get_data(  
+        as_text=True  
+    )  
 
-    # 處理 Webhook 簽名驗證
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        app.logger.error("Invalid signature. Please check your channel access token/channel secret.")
-        abort(400)
+    try:  
+        handler.handle(  
+            body,  
+            signature  
+        )  
+
+    except InvalidSignatureError:  
+        abort(400)  
 
     return 'OK'
 
-#=====================
-#cron-job 觸發
-#=====================
+# =====================
+# 接收訊息
+# =====================
+@handler.add(
+    MessageEvent,
+    message=TextMessage
+)
+def handle_message(event):
+    text = event.message.text.strip()  
 
-@app.route("/trigger")
-def trigger():
+    # 自動記錄  
+    if event.source.type == "user":  
+        add_user(event.source.user_id)  
 
-try:  
+    elif event.source.type == "group":  
+        add_group(event.source.group_id)  
 
-    send_job()  
+    data = load_data()  
 
-    return "success", 200  
+    # =====================  
+    # 格式：  
+    # 小明：6/1休假  
+    # 小白：5/28出差至6/2  
+    # =====================  
+    match = re.match(  
+        r"(.+?)：(.+)",  
+        text  
+    )  
 
-except Exception as e:  
+    if match:  
+        name = match.group(1).strip()  
 
-    return str(e), 500
+        content = match.group(2).strip()  
+
+        if name not in data["members"]:  
+            return  
+
+        today = taiwan_now().date()
+        year = today.year  
+
+        # =====================  
+        # 多日事件  
+        # =====================  
+        multi_match = re.search(  
+            r"(\d{1,2})/(\d{1,2}).*至(\d{1,2})/(\d{1,2})",  
+            content  
+        )  
+
+        if multi_match:  
+            start_month = int(multi_match.group(1))  
+            start_day = int(multi_match.group(2))  
+            end_month = int(multi_match.group(3))  
+            end_day = int(multi_match.group(4))  
+
+            # 跨年處理邏輯 (例如：12月設定跨至1月的事件)
+            start_year = year + 1 if start_month < today.month else year
+            end_year = start_year + 1 if end_month < start_month else start_year
+
+            data["members"][name] = {  
+                "text": content,  
+                "start": f"{start_year}/{start_month:02d}/{start_day:02d}",  
+                "expire": f"{end_year}/{end_month:02d}/{end_day:02d}",  
+                "show_once": False  
+            }  
+
+        else:  
+            # =====================  
+            # 單日事件  
+            # =====================  
+            single_match = re.search(  
+                r"(\d{1,2})/(\d{1,2})",  
+                content  
+            )  
+
+            if single_match:  
+                month = int(single_match.group(1))  
+                day = int(single_match.group(2))  
+
+                # 跨年處理邏輯 (例如：12/31設定 1/1 的事件)
+                target_year = year + 1 if month < today.month else year
+
+                data["members"][name] = {  
+                    "text": content,  
+                    "start": f"{target_year}/{month:02d}/{day:02d}",  
+                    "expire": "",  
+                    "show_once": True  
+                }  
+
+        save_data(data)  
+
+        line_bot_api.reply_message(  
+            event.reply_token,  
+            TextSendMessage(  
+                text=f"✅ 已更新 {name}"  
+            )  
+        )
+
+# =====================
+# 啟動
+# =====================
+# 修正 2：__name__ 判斷修正
+if __name__ == "__main__":
+    app.run(  
+        host="0.0.0.0",  
+        port=5000  
+    )
