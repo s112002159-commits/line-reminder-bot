@@ -330,7 +330,13 @@ def send_job(force_send=False):
             print("Group Error:", e)  
 
     print("✅ 發送完成")
-    return "OK"
+
+# =====================
+# 首頁
+# =====================
+@app.route("/")
+def home():
+return "OK", 200
 
 # =====================
 # cron-job 觸發
