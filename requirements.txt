@@ -3,3 +3,4 @@ line-bot-sdk
 holidays
 python-dotenv
 gunicorn==23.0.0
+pytz
