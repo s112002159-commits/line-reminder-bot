@@ -259,3 +259,32 @@ def clear_expired():
                 pass
     
     save_data(data)
+    
+# =====================
+# 首頁測試路由 (供瀏覽器點擊檢查)
+# =====================
+@app.route("/", methods=['GET'])
+def index():
+    return "Line Bot is running smoothly!", 200
+
+# =====================
+# LINE Webhook 接收點
+# =====================
+@app.route("/callback", methods=['POST'])
+def callback():
+    # 取得 LINE 傳來的 X-Line-Signature header
+    signature = request.headers.get('X-Line-Signature')
+
+    # 取得請求內容
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: " + body)
+
+    # 處理 Webhook 簽名驗證
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        app.logger.error("Invalid signature. Please check your channel access token/channel secret.")
+        abort(400)
+
+    return 'OK'
+
