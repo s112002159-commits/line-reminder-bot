@@ -288,3 +288,19 @@ def callback():
 
     return 'OK'
 
+#=====================
+#cron-job 觸發
+#=====================
+
+@app.route("/trigger")
+def trigger():
+
+try:  
+
+    send_job()  
+
+    return "success", 200  
+
+except Exception as e:  
+
+    return str(e), 500
