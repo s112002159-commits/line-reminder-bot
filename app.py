@@ -374,6 +374,7 @@ def handle_message(event):
             reply_text = (
                 "📖 使用說明指令表：\n\n"
                 "• /h - 查看說明清單\n"
+                "• /t - 強制發送今日回報 (無視假日)\n"
                 "• /l - 查看所有成員事故\n"
                 "• /s - 查看目前儲存事件\n"
                 "• /c [姓名] - 清除指定人員事故 (例: /c 宗旂)\n"
@@ -385,7 +386,12 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
             return
 
-        # 2. /l 查看所有事故
+        # 2. /t 強制發送已儲存事故
+        elif text.lower() == "/t":
+            send_job(force_send=True)
+            return
+
+        # 3. /l 查看所有事故
         elif text.lower() == "/l":
             clear_expired()
             data = load_data()
@@ -399,7 +405,7 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text="\n".join(msg_lines)))
             return
 
-        # 3. /s 查看目前儲存事件詳情
+        # 4. /s 查看目前儲存事件詳情
         elif text.lower() == "/s":
             clear_expired()
             data = load_data()
@@ -418,7 +424,7 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text="\n".join(msg_lines)))
             return
 
-        # 4. /c 某人 (清除指定人員)
+        # 5. /c 某人 (清除指定人員)
         elif text.lower().startswith("/c"):
             target_name = text[2:].strip()
             if not target_name:
@@ -438,7 +444,7 @@ def handle_message(event):
                 line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"❌ 找不到成員：{target_name}"))
             return
 
-        # 5. /r 清空所有事故
+        # 6. /r 清空所有事故
         elif text.lower() == "/r":
             for name in data["members"]:
                 data["members"][name] = {
